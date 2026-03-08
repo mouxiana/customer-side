@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact",
+    "search": "Search products..."
+  },
+  "header": {
+    "user": "User",
+    "cart": "Cart"
+  },
+  "home": {
+    "welcome": "Welcome to Our Brand Store",
+    "subtitle": "Discover amazing products from our exclusive brand",
+    "shopNow": "Shop Now",
+    "categories": "Shop by Category",
+    "featured": "Featured Products",
+    "featuredDesc": "Popular items that meet your needs",
+    "services": "Our Services",
+    "servicesDesc": "Provide comprehensive shopping guarantee and service support",
+    "freeShipping": "Free Shipping",
+    "freeShippingDesc": "Free shipping nationwide, worry-free shopping experience",
+    "dayReturn": "7-Day Return",
+    "dayReturnDesc": "Support 7-day no reason return for peace of mind",
+    "support": "Customer Support",
+    "supportDesc": "24-hour online customer service with professional support"
+  },
+  "product": {
+    "description": "Description",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "quantity": "Quantity",
+    "related": "Related Products",
+    "details": "Details",
+    "specifications": "Specifications",
+    "reviews": "Reviews",
+    "purchaseOptions": "Purchase Options",
+    "shipping": "Shipping",
+    "returns": "Returns",
+    "features": "Features"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "items": "items",
+    "product": "Product",
+    "price": "Price",
+    "quantity": "Quantity",
+    "subtotal": "Subtotal",
+    "action": "Action",
+    "continue": "Continue Shopping",
+    "update": "Update Cart",
+    "summary": "Order Summary",
+    "subtotalLabel": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Proceed to Checkout",
+    "promo": "Have a promo code?",
+    "apply": "Apply",
+    "secure": "Secure Checkout",
+    "recommendations": "You Might Also Like"
+  },
+  "orders": {
+    "title": "My Orders",
+    "filter": "Filter by status:",
+    "all": "All Orders",
+    "pending": "Pending",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "orderNumber": "Order #",
+    "date": "Date",
+    "total": "Total",
+    "status": "Status",
+    "noOrders": "No orders found"
+  }
+}

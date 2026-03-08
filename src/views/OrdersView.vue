@@ -1,0 +1,186 @@
+<template>
+  <div class="container mx-auto px-4 py-8">
+    <div class="py-4">
+      <nav class="flex text-sm text-gray-600">
+        <router-link to="/" class="hover:text-primary">{{ $t('nav.home') }}</router-link>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">{{ $t('orders.title') }}</span>
+      </nav>
+    </div>
+
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">{{ $t('orders.title') }}</h1>
+      <p class="text-gray-600 mt-2">View your order history</p>
+    </div>
+
+    <div v-if="isLoading" class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+      <p class="text-gray-600">Loading orders...</p>
+    </div>
+
+    <div v-else-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+      {{ errorMessage }}
+    </div>
+
+    <div v-else>
+      <div class="mb-6">
+        <span class="text-gray-700 mr-4">{{ $t('orders.filter') }}</span>
+        <select v-model="filterStatus" class="border border-gray-300 rounded-lg px-4 py-2">
+          <option value="">{{ $t('orders.all') }}</option>
+          <option value="created">{{ $t('orders.created') }}</option>
+          <option value="processing">{{ $t('orders.processing') }}</option>
+          <option value="shipped">{{ $t('orders.shipped') }}</option>
+          <option value="delivered">{{ $t('orders.delivered') }}</option>
+          <option value="completed">Completed</option>
+          <option value="hold">On Hold</option>
+          <option value="cancelled">{{ $t('orders.cancelled') }}</option>
+        </select>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div v-if="orders.length === 0" class="text-center py-12 text-gray-500">
+          <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+          <p class="text-lg">{{ $t('orders.noOrders') }}</p>
+          <router-link to="/products" class="inline-block mt-6 bg-primary text-white px-6 py-3 rounded-button hover:bg-orange-600">
+            Start Shopping
+          </router-link>
+        </div>
+
+        <div v-else class="space-y-4">
+          <div v-for="order in paginatedOrders" :key="order.order_id" class="border border-gray-200 rounded-lg p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div class="text-sm text-gray-500">Order</div>
+                <div class="font-semibold text-gray-900">#{{ order.order_id }}</div>
+              </div>
+
+              <div>
+                <div class="text-sm text-gray-500">Purchase Date</div>
+                <div class="text-gray-900">{{ formatDate(order.purchase_date) }}</div>
+              </div>
+
+              <div>
+                <div class="text-sm text-gray-500">Total</div>
+                <div class="font-bold text-primary">{{ formatPrice(order.total_amount) }}</div>
+              </div>
+
+              <div>
+                <span :class="getStatusClass(order.status)" class="inline-block px-3 py-1 rounded-full text-sm">
+                  {{ getStatusText(order.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="totalPages > 1" class="mt-8 flex justify-center items-center gap-3">
+          <button
+            @click="prevPage"
+            :disabled="currentPage === 1"
+            class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            <i class="fas fa-chevron-left mr-1"></i> Previous
+          </button>
+          <span>Page {{ currentPage }} of {{ totalPages }}</span>
+          <button
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            Next <i class="fas fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ordersAPI } from '../api'
+
+const router = useRouter()
+const orders = ref([])
+const filterStatus = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 6
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const totalPages = computed(() => Math.max(1, Math.ceil(orders.value.length / itemsPerPage)))
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return orders.value.slice(start, start + itemsPerPage)
+})
+
+const fetchOrders = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  currentPage.value = 1
+
+  try {
+    const result = await ordersAPI.getOrders(filterStatus.value || '')
+    orders.value = result?.orders || []
+  } catch (error) {
+    console.error('Failed to fetch orders:', error)
+    if (error.status === 401) {
+      errorMessage.value = 'Please login to view your orders.'
+      setTimeout(() => router.push('/login'), 800)
+    } else {
+      errorMessage.value = error.message || 'Failed to load orders.'
+    }
+    orders.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const formatPrice = (price) => `£${Number(price || 0).toFixed(2)}`
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const getStatusClass = (status) => {
+  const classes = {
+    created: 'bg-blue-100 text-blue-800',
+    processing: 'bg-yellow-100 text-yellow-800',
+    shipped: 'bg-purple-100 text-purple-800',
+    delivered: 'bg-green-100 text-green-800',
+    completed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
+    hold: 'bg-orange-100 text-orange-800'
+  }
+  return classes[status] || 'bg-gray-100 text-gray-800'
+}
+
+const getStatusText = (status) => {
+  const texts = {
+    created: 'Created',
+    processing: 'Processing',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    hold: 'On Hold'
+  }
+  return texts[status] || status
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value -= 1
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value += 1
+}
+
+watch(filterStatus, fetchOrders)
+onMounted(fetchOrders)
+</script>
