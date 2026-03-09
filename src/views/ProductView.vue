@@ -201,7 +201,7 @@ const maxQuantity = computed(() => {
   return 10
 })
 
-const formatPrice = (price) => `£${Number(price || 0).toFixed(2)}`
+const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
 const formatDate = (value) => new Date(value).toLocaleString()
 
 const selectImage = (index) => {

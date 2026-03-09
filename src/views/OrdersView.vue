@@ -136,11 +136,11 @@ const fetchOrders = async () => {
   }
 }
 
-const formatPrice = (price) => `£${Number(price || 0).toFixed(2)}`
+const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-GB', {
+  return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

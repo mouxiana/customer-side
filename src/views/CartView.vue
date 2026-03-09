@@ -158,7 +158,7 @@ const totalAmount = computed(() => {
   return cartItems.value.reduce((sum, item) => sum + Number(item.subtotal ?? item.price * item.quantity || 0), 0)
 })
 
-const formatPrice = (price) => `£${Number(price || 0).toFixed(2)}`
+const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
 
 const getItemImage = (item) => {
   if (item?.thumbnail_url) return productsAPI.resolveAssetUrl(item.thumbnail_url)

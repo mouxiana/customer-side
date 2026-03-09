@@ -162,7 +162,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pageS
 const sortedProducts = computed(() => [...products.value])
 
 const getProductId = (product) => product?.id ?? product?.product_id ?? product?._id
-const formatPrice = (price) => `£${Number(price || 0).toFixed(2)}`
+const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
 
 const getProductImage = (product) => {
   if (product?.thumbnail_url) return productsAPI.resolveAssetUrl(product.thumbnail_url)

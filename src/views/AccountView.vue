@@ -100,7 +100,7 @@
                 <tr v-for="order in recentOrders" :key="order.order_id" class="border-b border-gray-200">
                   <td class="py-4">#{{ order.order_id }}</td>
                   <td class="py-4">{{ formatDate(order.purchase_date) }}</td>
-                  <td class="py-4">£{{ Number(order.total_amount || 0).toFixed(2) }}</td>
+                  <td class="py-4">${{ Number(order.total_amount || 0).toFixed(2) }}</td>
                   <td class="py-4">
                     <span :class="getStatusClass(order.status)" class="px-3 py-1 rounded-full text-sm">
                       {{ order.status }}
@@ -141,7 +141,7 @@ const getStatusClass = (status) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('en-GB', {
+  return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
