@@ -7,7 +7,7 @@
           <router-link to="/" class="text-2xl font-bold text-primary">
             BrandStore
           </router-link>
-          
+
           <!-- Navigation Links -->
           <nav class="hidden md:flex space-x-8">
             <router-link to="/" class="nav-link text-gray-700 hover:text-primary transition-colors duration-200">
@@ -21,23 +21,33 @@
             </router-link>
           </nav>
         </div>
-        
+
         <!-- Right Side -->
         <div class="flex items-center space-x-4">
           <!-- Search -->
-          <div class="relative hidden md:block">
-            <input type="text" placeholder="Search products..." 
-                   class="search-input w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm">
-            <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-          </div>
-          
+          <form class="relative hidden md:block" @submit.prevent="handleGlobalSearch">
+            <input
+              v-model.trim="globalSearch"
+              type="text"
+              placeholder="Search products..."
+              class="search-input w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm pr-10"
+            >
+            <button
+              type="submit"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary transition-colors duration-200"
+              aria-label="Search products"
+            >
+              <i class="fas fa-search"></i>
+            </button>
+          </form>
+
           <!-- Language Selector -->
-          <select v-model="currentLocale" @change="changeLanguage" 
+          <select v-model="currentLocale" @change="changeLanguage"
                   class="border border-gray-300 rounded-lg px-3 py-1 text-sm">
             <option value="en">EN</option>
             <option value="zh-CN">中文</option>
           </select>
-          
+
           <!-- User Dropdown -->
           <div class="relative group">
             <button class="p-2 text-gray-700 hover:text-primary transition-colors duration-200">
@@ -64,11 +74,11 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Cart -->
           <router-link to="/cart" class="p-2 text-gray-700 hover:text-primary transition-colors duration-200 relative">
             <i class="fas fa-shopping-cart text-xl"></i>
-            <span v-if="cartCount > 0" 
+            <span v-if="cartCount > 0"
                   class="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {{ cartCount }}
             </span>
@@ -80,22 +90,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 
 const { locale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const cartStore = useCartStore()
 
 const currentLocale = ref(locale.value)
+const globalSearch = ref('')
 const isLoggedIn = ref(false) // 这里应该从 auth store 获取
 
 const cartCount = computed(() => cartStore.itemCount)
 
+watch(
+  () => route.query.search,
+  (value) => {
+    globalSearch.value = String(value || '')
+  },
+  { immediate: true }
+)
+
 const changeLanguage = () => {
   locale.value = currentLocale.value
+}
+
+const handleGlobalSearch = () => {
+  const keyword = globalSearch.value.trim()
+
+  router.push({
+    path: '/products',
+    query: keyword ? { search: keyword } : {}
+  })
 }
 
 const handleLogout = () => {

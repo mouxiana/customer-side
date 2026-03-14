@@ -139,10 +139,11 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { cartAPI, productsAPI } from '../api'
 
 const router = useRouter()
+const route = useRoute()
 const products = ref([])
 const searchQuery = ref('')
 const currentPage = ref(1)
@@ -150,6 +151,7 @@ const pageSize = 9
 const totalItems = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const isSyncingFromRoute = ref(false)
 
 const mockCategories = ref([
   { id: 1, name: 'Phone', count: 12 },
@@ -228,9 +230,14 @@ const goToPage = (page) => {
 
 let searchTimer = null
 watch(searchQuery, () => {
+  if (isSyncingFromRoute.value) return
+
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
-    currentPage.value = 1
+    if (currentPage.value !== 1) {
+      currentPage.value = 1
+      return
+    }
     fetchProducts()
   }, 350)
 })
@@ -240,5 +247,27 @@ watch(currentPage, () => {
   fetchProducts()
 })
 
-onMounted(fetchProducts)
+watch(
+  () => route.query.search,
+  async (newValue) => {
+    const nextValue = String(newValue || '')
+    if (nextValue === searchQuery.value) return
+
+    isSyncingFromRoute.value = true
+    searchQuery.value = nextValue
+
+    if (currentPage.value !== 1) {
+      currentPage.value = 1
+    } else {
+      await fetchProducts()
+    }
+
+    isSyncingFromRoute.value = false
+  }
+)
+
+onMounted(() => {
+  searchQuery.value = String(route.query.search || '')
+  fetchProducts()
+})
 </script>

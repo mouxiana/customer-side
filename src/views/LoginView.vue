@@ -23,7 +23,7 @@
             autocomplete="email"
             class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-primary"
             :class="errors.email ? 'border-red-300' : 'border-gray-300'"
-          />
+          >
           <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
         </div>
 
@@ -36,7 +36,7 @@
             autocomplete="current-password"
             class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-primary"
             :class="errors.password ? 'border-red-300' : 'border-gray-300'"
-          />
+          >
           <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
         </div>
 
@@ -97,14 +97,12 @@ const handleLogin = async () => {
 
   try {
     loading.value = true
-
     const result = await authAPI.login({
       email: form.email,
       password: form.password
     })
 
     if (result?.profile) {
-      alert('Login successful!')
       router.push('/account')
       return
     }

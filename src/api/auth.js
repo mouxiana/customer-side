@@ -8,7 +8,12 @@ export const authAPI = {
         body: JSON.stringify(userData),
       })
     } catch (error) {
-      const wrapped = new Error(`注册失败: ${error.data?.error || error.message}`)
+      const message =
+        error.data?.details
+          ? Object.values(error.data.details).flat().join('; ')
+          : error.data?.error || error.message
+
+      const wrapped = new Error(`注册失败: ${message}`)
       wrapped.status = error.status
       wrapped.data = error.data
       throw wrapped

@@ -155,7 +155,12 @@ const updatingCart = ref({})
 const removingCart = ref({})
 
 const totalAmount = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + Number(item.subtotal ?? item.price * item.quantity || 0), 0)
+  return cartItems.value.reduce((sum, item) => {
+    const lineTotal =
+      item.subtotal ?? ((Number(item.price) || 0) * (Number(item.quantity) || 0))
+
+    return sum + Number(lineTotal || 0)
+  }, 0)
 })
 
 const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
