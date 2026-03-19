@@ -1,7 +1,7 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8 page-section">
     <div class="py-4">
-      <nav class="flex text-sm text-gray-600">
+      <nav class="flex flex-wrap text-sm text-gray-600 gap-y-2">
         <router-link to="/" class="hover:text-primary">Home</router-link>
         <span class="mx-2">/</span>
         <span class="text-gray-900">My Account</span>
@@ -20,16 +20,48 @@
       </router-link>
     </div>
 
-    <div v-else class="flex flex-col lg:flex-row gap-8">
+    <div v-else class="flex flex-col lg:flex-row gap-8 account-layout">
       <div class="lg:w-1/4">
-        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 account-sidebar-sticky">
           <div class="flex items-center mb-6">
-            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4 shrink-0">
               <i class="fas fa-user text-2xl text-gray-500"></i>
             </div>
-            <div>
-              <h3 class="font-semibold text-gray-900">{{ userProfile.full_name }}</h3>
+            <div class="min-w-0">
+              <h3 class="font-semibold text-gray-900 break-words">{{ userProfile.full_name }}</h3>
               <p class="text-sm text-gray-600 break-all">{{ userProfile.email }}</p>
+            </div>
+          </div>
+
+          <div class="account-settings-card border border-gray-200 rounded-xl p-4 mb-6 bg-gray-50">
+            <div class="flex items-center justify-between gap-3 mb-3 responsive-toolbar">
+              <div>
+                <h4 class="font-semibold text-gray-900">Display Settings</h4>
+                <p class="text-xs text-gray-500">Adjust the page font size</p>
+              </div>
+              <span class="text-sm font-medium text-primary">{{ fontPercent }}%</span>
+            </div>
+
+            <input
+              v-model="fontScale"
+              type="range"
+              min="0.9"
+              max="1.2"
+              step="0.05"
+              class="w-full mb-3"
+              @input="handleFontScaleInput"
+            >
+
+            <div class="grid grid-cols-3 gap-2 text-sm">
+              <button type="button" class="px-3 py-2 rounded-lg border border-gray-200 hover:border-primary hover:text-primary" @click="setFontScale(0.9)">
+                Small
+              </button>
+              <button type="button" class="px-3 py-2 rounded-lg border border-gray-200 hover:border-primary hover:text-primary" @click="setFontScale(1)">
+                Default
+              </button>
+              <button type="button" class="px-3 py-2 rounded-lg border border-gray-200 hover:border-primary hover:text-primary" @click="setFontScale(1.15)">
+                Large
+              </button>
             </div>
           </div>
 
@@ -58,10 +90,10 @@
       </div>
 
       <div class="lg:w-3/4 space-y-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 responsive-grid-3">
           <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="text-sm text-gray-500 mb-2">Account Name</div>
-            <div class="text-lg font-semibold text-gray-900">{{ userProfile.full_name || 'Customer' }}</div>
+            <div class="text-lg font-semibold text-gray-900 break-words">{{ userProfile.full_name || 'Customer' }}</div>
           </div>
           <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="text-sm text-gray-500 mb-2">Recent Orders</div>
@@ -74,11 +106,17 @@
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
+          <div class="flex items-start justify-between gap-4 mb-6 responsive-toolbar">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Profile Information</h2>
+              <p class="text-sm text-gray-500 mt-1">Your preferred font size is saved automatically for the next visit.</p>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div class="text-sm text-gray-500 mb-1">Full Name</div>
-              <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">{{ userProfile.full_name || 'Not provided' }}</div>
+              <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 break-words">{{ userProfile.full_name || 'Not provided' }}</div>
             </div>
             <div>
               <div class="text-sm text-gray-500 mb-1">Email</div>
@@ -86,7 +124,7 @@
             </div>
             <div class="md:col-span-2">
               <div class="text-sm text-gray-500 mb-1">Shipping Address</div>
-              <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 whitespace-pre-line">
+              <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 whitespace-pre-line break-words">
                 {{ userProfile.shipping_address || 'No shipping address' }}
               </div>
             </div>
@@ -94,7 +132,7 @@
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-6">
-          <div class="flex justify-between items-center mb-6">
+          <div class="flex justify-between items-center gap-4 mb-6 responsive-toolbar">
             <h2 class="text-xl font-bold text-gray-900">Recent Orders</h2>
             <router-link to="/orders" class="text-primary hover:underline">
               View all orders
@@ -114,7 +152,7 @@
           </div>
 
           <div v-else class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full min-w-[560px]">
               <thead>
                 <tr class="border-b border-gray-200">
                   <th class="text-left py-3 font-medium text-gray-700">Order #</th>
@@ -129,7 +167,7 @@
                   <td class="py-4">{{ formatDate(order.purchase_date) }}</td>
                   <td class="py-4">{{ formatPrice(order.total_amount) }}</td>
                   <td class="py-4">
-                    <span :class="getStatusClass(order.status)" class="px-3 py-1 rounded-full text-sm">
+                    <span :class="getStatusClass(order.status)" class="px-3 py-1 rounded-full text-sm whitespace-nowrap">
                       {{ order.status }}
                     </span>
                   </td>
@@ -144,7 +182,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI, ordersAPI } from '../api'
 
@@ -154,6 +192,40 @@ const recentOrdersLoading = ref(false)
 const userProfile = ref(null)
 const recentOrders = ref([])
 const ordersUnavailable = ref(false)
+const fontScale = ref(1)
+
+const FONT_SCALE_KEY = 'ui_font_scale'
+
+const fontPercent = computed(() => Math.round(Number(fontScale.value || 1) * 100))
+
+const clampFontScale = (value) => {
+  const next = Number(value || 1)
+  return Math.min(1.2, Math.max(0.9, next))
+}
+
+const applyFontScale = (value) => {
+  const next = clampFontScale(value)
+  fontScale.value = next
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--app-font-scale', String(next))
+  }
+
+  localStorage.setItem(FONT_SCALE_KEY, String(next))
+}
+
+const loadSavedFontScale = () => {
+  const saved = localStorage.getItem(FONT_SCALE_KEY)
+  applyFontScale(saved || 1)
+}
+
+const handleFontScaleInput = (event) => {
+  applyFontScale(event.target.value)
+}
+
+const setFontScale = (value) => {
+  applyFontScale(value)
+}
 
 const getStatusClass = (status) => {
   const classes = {
@@ -227,5 +299,8 @@ const fetchUserData = async () => {
   }
 }
 
-onMounted(fetchUserData)
+onMounted(() => {
+  loadSavedFontScale()
+  fetchUserData()
+})
 </script>

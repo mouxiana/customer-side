@@ -1,29 +1,20 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="app-shell min-h-screen bg-gray-50">
     <Navbar />
-    <router-view />
+    <main class="app-main">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <script setup>
-import { watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { onMounted } from 'vue'
 import Navbar from './components/Navbar.vue'
 
-const { locale } = useI18n()
+const FONT_SCALE_KEY = 'ui_font_scale'
 
-watch(
-  locale,
-  (value) => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('locale', value)
-      localStorage.setItem('language', value)
-    }
-
-    if (typeof document !== 'undefined') {
-      document.documentElement.lang = value
-    }
-  },
-  { immediate: true }
-)
+onMounted(() => {
+  const savedScale = localStorage.getItem(FONT_SCALE_KEY) || '1'
+  document.documentElement.style.setProperty('--app-font-scale', String(savedScale))
+})
 </script>
