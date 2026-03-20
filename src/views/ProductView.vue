@@ -2,17 +2,17 @@
   <div class="container mx-auto px-4 py-8">
     <div class="py-4">
       <nav class="flex text-sm text-gray-600">
-        <router-link to="/" class="hover:text-primary">{{ $t('nav.home') }}</router-link>
+        <router-link to="/" class="hover:text-primary">{{ labels.home }}</router-link>
         <span class="mx-2">/</span>
-        <router-link to="/products" class="hover:text-primary">{{ $t('nav.products') }}</router-link>
+        <router-link to="/products" class="hover:text-primary">{{ labels.products }}</router-link>
         <span class="mx-2">/</span>
-        <span class="text-gray-900">{{ product.name || 'Product' }}</span>
+        <span class="text-gray-900">{{ product.name || labels.product }}</span>
       </nav>
     </div>
 
     <div v-if="isLoading" class="text-center py-16">
       <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
-      <p class="text-gray-600">Loading product details...</p>
+      <p class="text-gray-600">{{ labels.loading }}</p>
     </div>
 
     <div v-else-if="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -32,7 +32,7 @@
             >
             <div v-else class="text-gray-500 flex flex-col items-center gap-2">
               <i class="fas fa-image text-4xl"></i>
-              <span>No image</span>
+              <span>{{ labels.noImage }}</span>
             </div>
           </div>
 
@@ -45,7 +45,7 @@
               :class="selectedImageIndex === index ? 'border-primary' : 'border-transparent'"
               @click="selectImage(index)"
             >
-              <img :src="image" alt="Product image" class="w-full h-full object-cover">
+              <img :src="image" :alt="labels.productImage" class="w-full h-full object-cover">
             </button>
           </div>
         </section>
@@ -60,76 +60,54 @@
           <div class="mb-4">
             <span
               :class="[
-                'inline-block px-3 py-1 rounded-full text-sm',
-                isProductAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                'inline-block px-3 py-1 rounded-full text-sm font-medium',
+                isProductAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               ]"
             >
-              {{ isProductAvailable ? 'In Stock' : 'Unavailable' }}
+              {{ isProductAvailable ? labels.available : labels.unavailable }}
             </span>
           </div>
 
           <div class="mb-6 text-gray-700 leading-7">
-            {{ product.description || 'No description available.' }}
+            {{ product.description || labels.noDescription }}
           </div>
 
           <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-            <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden w-fit">
-              <button
-                type="button"
-                class="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200"
-                :disabled="quantity <= 1"
-                @click="decreaseQuantity"
-              >
-                <i class="fas fa-minus"></i>
-              </button>
-              <div class="w-16 h-10 flex items-center justify-center border-x border-gray-300">
-                {{ quantity }}
-              </div>
-              <button
-                type="button"
-                class="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200"
-                :disabled="quantity >= maxQuantity"
-                @click="increaseQuantity"
-              >
-                <i class="fas fa-plus"></i>
-              </button>
+            <label class="block text-sm font-medium text-gray-700 mb-2">{{ labels.quantity }}</label>
+            <div class="flex items-center gap-3">
+              <button type="button" class="px-3 py-2 border rounded-lg" @click="decreaseQuantity">-</button>
+              <span class="w-12 text-center">{{ quantity }}</span>
+              <button type="button" class="px-3 py-2 border rounded-lg" @click="increaseQuantity">+</button>
             </div>
           </div>
 
-          <button
-            @click="addToCart"
-            :disabled="!isProductAvailable || isAddingToCart"
-            :class="[
-              'w-full sm:w-auto text-white py-3 px-8 !rounded-button font-medium transition-colors duration-200',
-              !isProductAvailable || isAddingToCart ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-orange-600'
-            ]"
-          >
-            <span v-if="isAddingToCart">
-              <i class="fas fa-spinner fa-spin mr-2"></i>
-              Adding...
-            </span>
-            <span v-else>
-              <i class="fas fa-shopping-cart mr-2"></i>
-              Add to Cart
-            </span>
-          </button>
+          <div class="flex gap-4 mb-8">
+            <button
+              type="button"
+              class="bg-primary hover:bg-orange-600 text-white px-8 py-3 rounded-button disabled:opacity-50"
+              :disabled="!isProductAvailable || isAddingToCart"
+              @click="addToCart"
+            >
+              {{ isAddingToCart ? labels.adding : labels.addToCart }}
+            </button>
+          </div>
 
-          <div class="mt-8 border-t border-gray-200 pt-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Product Details</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div>
-                <div class="text-gray-500">Product ID</div>
-                <div class="font-medium text-gray-900">{{ displayProductId }}</div>
-              </div>
-              <div v-if="product.category">
-                <div class="text-gray-500">Category</div>
-                <div class="font-medium text-gray-900">{{ product.category }}</div>
-              </div>
-              <div v-if="product.updated_at">
-                <div class="text-gray-500">Last Updated</div>
-                <div class="font-medium text-gray-900">{{ formatDate(product.updated_at) }}</div>
-              </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-gray-500 mb-1">{{ labels.productId }}</div>
+              <div class="font-medium text-gray-900">{{ displayProductId }}</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-gray-500 mb-1">{{ labels.category }}</div>
+              <div class="font-medium text-gray-900">{{ product.category || '-' }}</div>
+            </div>
+            <div v-if="product.created_at" class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-gray-500 mb-1">{{ labels.createdAt }}</div>
+              <div class="font-medium text-gray-900">{{ formatDate(product.created_at) }}</div>
+            </div>
+            <div v-if="product.updated_at" class="p-4 bg-gray-50 rounded-lg">
+              <div class="text-gray-500 mb-1">{{ labels.updatedAt }}</div>
+              <div class="font-medium text-gray-900">{{ formatDate(product.updated_at) }}</div>
             </div>
           </div>
         </section>
@@ -140,9 +118,11 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { cartAPI, productsAPI } from '../api'
 
+const { locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -154,15 +134,50 @@ const isLoading = ref(false)
 const isAddingToCart = ref(false)
 const errorMessage = ref('')
 
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const labels = computed(() => isZh.value ? {
+  home: '首页',
+  products: '商品',
+  product: '商品',
+  loading: '正在加载商品详情...',
+  noImage: '暂无图片',
+  productImage: '商品图片',
+  available: '可购买',
+  unavailable: '暂不可购买',
+  noDescription: '暂无详细介绍。',
+  quantity: '数量',
+  addToCart: '加入购物车',
+  adding: '加入中...',
+  productId: '商品编号',
+  category: '分类',
+  createdAt: '创建时间',
+  updatedAt: '更新时间'
+} : {
+  home: 'Home',
+  products: 'Products',
+  product: 'Product',
+  loading: 'Loading product details...',
+  noImage: 'No image',
+  productImage: 'Product image',
+  available: 'Available',
+  unavailable: 'Unavailable',
+  noDescription: 'No description available.',
+  quantity: 'Quantity',
+  addToCart: 'Add to Cart',
+  adding: 'Adding...',
+  productId: 'Product ID',
+  category: 'Category',
+  createdAt: 'Created At',
+  updatedAt: 'Updated At'
+})
+
 const getProductId = (item) => item?.id ?? item?.product_id ?? item?._id ?? route.params.id
 
 const imageList = computed(() => {
   const productId = getProductId(product.value)
   const urls = []
 
-  if (product.value?.thumbnail_url) {
-    urls.push(productsAPI.resolveAssetUrl(product.value.thumbnail_url))
-  }
+  if (product.value?.thumbnail_url) urls.push(productsAPI.resolveAssetUrl(product.value.thumbnail_url))
 
   if (Array.isArray(product.value?.images)) {
     for (const image of product.value.images) {
@@ -189,20 +204,14 @@ const imageList = computed(() => {
 
 const selectedImage = computed(() => imageList.value[selectedImageIndex.value] || '')
 const displayProductId = computed(() => getProductId(product.value))
-
-const isProductAvailable = computed(() => {
-  if (product.value?.status === 'inactive') return false
-  return true
-})
-
+const isProductAvailable = computed(() => product.value?.status !== 'inactive')
 const maxQuantity = computed(() => {
   const stock = Number(product.value?.stock_quantity)
-  if (Number.isFinite(stock) && stock > 0) return stock
-  return 10
+  return Number.isFinite(stock) && stock > 0 ? stock : 10
 })
 
 const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
-const formatDate = (value) => new Date(value).toLocaleString()
+const formatDate = (value) => new Date(value).toLocaleString(isZh.value ? 'zh-CN' : 'en-US')
 
 const selectImage = (index) => {
   selectedImageIndex.value = index
@@ -221,7 +230,7 @@ const fetchProductDetail = async () => {
     product.value = result || {}
   } catch (error) {
     console.error('Failed to fetch product detail:', error)
-    errorMessage.value = error.status === 404 ? 'Product not found.' : (error.message || 'Failed to load product details.')
+    errorMessage.value = error.status === 404 ? (isZh.value ? '商品不存在。' : 'Product not found.') : (error.message || (isZh.value ? '加载商品详情失败。' : 'Failed to load product details.'))
   } finally {
     isLoading.value = false
   }
@@ -241,18 +250,19 @@ const addToCart = async () => {
   try {
     isAddingToCart.value = true
     await cartAPI.addToCart(displayProductId.value, quantity.value)
-    alert(`Added ${quantity.value} × ${product.value.name} to cart.`)
+    alert(isZh.value ? `已将 ${quantity.value} × ${product.value.name} 加入购物车。` : `Added ${quantity.value} × ${product.value.name} to cart.`)
   } catch (error) {
     if (error.status === 401) {
       router.push('/login')
       return
     }
-    alert(error.message || 'Failed to add to cart.')
+    alert(error.message || (isZh.value ? '加入购物车失败。' : 'Failed to add to cart.'))
   } finally {
     isAddingToCart.value = false
   }
 }
 
 watch(() => route.params.id, fetchProductDetail)
+watch(locale, fetchProductDetail)
 onMounted(fetchProductDetail)
 </script>

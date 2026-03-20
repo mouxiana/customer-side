@@ -9,13 +9,13 @@
 
           <nav class="hidden md:flex space-x-8">
             <router-link to="/" class="nav-link text-gray-700 hover:text-primary transition-colors duration-200">
-              Home
+              {{ tHome }}
             </router-link>
             <router-link to="/products" class="nav-link text-gray-700 hover:text-primary transition-colors duration-200">
-              Products
+              {{ tProducts }}
             </router-link>
             <router-link to="/orders" class="nav-link text-gray-700 hover:text-primary transition-colors duration-200">
-              My Orders
+              {{ tMyOrders }}
             </router-link>
           </nav>
         </div>
@@ -25,13 +25,13 @@
             <input
               v-model.trim="globalSearch"
               type="text"
-              placeholder="Search products..."
+              :placeholder="tSearchPlaceholder"
               class="search-input w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm pr-10"
             >
             <button
               type="submit"
               class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary transition-colors duration-200"
-              aria-label="Search products"
+              :aria-label="tSearchPlaceholder"
             >
               <i class="fas fa-search"></i>
             </button>
@@ -57,28 +57,28 @@
                   to="/account"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary"
                 >
-                  <i class="fas fa-user-circle mr-3"></i>My Account
+                  <i class="fas fa-user-circle mr-3"></i>{{ tMyAccount }}
                 </router-link>
                 <router-link
                   v-if="isLoggedIn"
                   to="/orders"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary"
                 >
-                  <i class="fas fa-shopping-bag mr-3"></i>My Orders
+                  <i class="fas fa-shopping-bag mr-3"></i>{{ tMyOrders }}
                 </router-link>
                 <router-link
                   v-if="!isLoggedIn"
                   to="/login"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary"
                 >
-                  <i class="fas fa-sign-in-alt mr-3"></i>Sign In
+                  <i class="fas fa-sign-in-alt mr-3"></i>{{ tSignIn }}
                 </router-link>
                 <router-link
                   v-if="!isLoggedIn"
                   to="/register"
                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-primary"
                 >
-                  <i class="fas fa-user-plus mr-3"></i>Register
+                  <i class="fas fa-user-plus mr-3"></i>{{ tRegister }}
                 </router-link>
                 <div v-if="isLoggedIn" class="border-t border-gray-200 my-1"></div>
                 <button
@@ -86,7 +86,7 @@
                   @click="handleLogout"
                   class="w-full text-left block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-red-500"
                 >
-                  <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                  <i class="fas fa-sign-out-alt mr-3"></i>{{ tLogout }}
                 </button>
               </div>
             </div>
@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { authAPI } from '../api'
@@ -122,6 +122,17 @@ const cartStore = useCartStore()
 const currentLocale = ref(locale.value)
 const globalSearch = ref('')
 const isLoggedIn = ref(authAPI.isLocallyLoggedIn())
+
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const tHome = computed(() => isZh.value ? '首页' : 'Home')
+const tProducts = computed(() => isZh.value ? '商品' : 'Products')
+const tMyOrders = computed(() => isZh.value ? '我的订单' : 'My Orders')
+const tSearchPlaceholder = computed(() => isZh.value ? '搜索商品...' : 'Search products...')
+const tMyAccount = computed(() => isZh.value ? '我的账户' : 'My Account')
+const tSignIn = computed(() => isZh.value ? '登录' : 'Sign In')
+const tRegister = computed(() => isZh.value ? '注册' : 'Register')
+const tLogout = computed(() => isZh.value ? '退出登录' : 'Logout')
+const tConfirmLogout = computed(() => isZh.value ? '确定要退出登录吗？' : 'Are you sure you want to logout?')
 
 const cartCount = computed(() => cartStore.itemCount)
 
@@ -144,6 +155,7 @@ const changeLanguage = () => {
   locale.value = currentLocale.value
   localStorage.setItem('locale', currentLocale.value)
   document.documentElement.lang = currentLocale.value
+  window.dispatchEvent(new Event('auth-changed'))
 }
 
 const handleGlobalSearch = () => {
@@ -167,15 +179,25 @@ const syncSession = async () => {
 }
 
 const handleLogout = async () => {
-  if (!confirm('Are you sure you want to logout?')) return
+  if (!confirm(tConfirmLogout.value)) return
 
   await authAPI.logout()
   isLoggedIn.value = false
+  window.dispatchEvent(new Event('auth-changed'))
   router.push('/')
+}
+
+const handleAuthChanged = () => {
+  syncSession()
 }
 
 onMounted(() => {
   currentLocale.value = locale.value
   syncSession()
+  window.addEventListener('auth-changed', handleAuthChanged)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('auth-changed', handleAuthChanged)
 })
 </script>

@@ -1,11 +1,11 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-lg bg-white shadow-lg rounded-2xl p-8">
-      <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">Create account</h1>
-      <p class="text-center text-sm text-gray-600 mb-8" v-if="!isLoggedIn">
-        Already have an account?
+      <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">{{ tCreateAccount }}</h1>
+      <p class="text-center text-sm text-gray-600 mb-8">
+        {{ tAlreadyHaveAccount }}
         <router-link to="/login" class="text-primary hover:text-orange-500 font-medium">
-          Sign in
+          {{ tSignIn }}
         </router-link>
       </p>
 
@@ -19,7 +19,7 @@
 
       <form class="space-y-5" @submit.prevent="handleRegister">
         <div>
-          <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full name</label>
+          <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">{{ tFullName }}</label>
           <input
             id="fullName"
             v-model.trim="form.fullName"
@@ -31,7 +31,7 @@
         </div>
 
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">{{ tEmail }}</label>
           <input
             id="email"
             v-model.trim="form.email"
@@ -43,7 +43,7 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">{{ tPassword }}</label>
           <input
             id="password"
             v-model="form.password"
@@ -55,7 +55,7 @@
         </div>
 
         <div>
-          <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">{{ tConfirmPassword }}</label>
           <input
             id="confirmPassword"
             v-model="form.confirmPassword"
@@ -67,7 +67,7 @@
         </div>
 
         <div>
-          <label for="shippingAddress" class="block text-sm font-medium text-gray-700 mb-2">Shipping address</label>
+          <label for="shippingAddress" class="block text-sm font-medium text-gray-700 mb-2">{{ tShippingAddress }}</label>
           <textarea
             id="shippingAddress"
             v-model.trim="form.shippingAddress"
@@ -83,8 +83,8 @@
           :disabled="isLoading"
           class="w-full bg-primary hover:bg-orange-600 text-white py-3 rounded-lg font-medium disabled:opacity-60"
         >
-          <span v-if="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating account...</span>
-          <span v-else>Create account</span>
+          <span v-if="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>{{ tCreatingAccount }}</span>
+          <span v-else>{{ tCreateAccount }}</span>
         </button>
       </form>
     </div>
@@ -92,12 +92,13 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authAPI } from '../api'
 
 const router = useRouter()
-const isLoggedIn = ref(authAPI.isLocallyLoggedIn())
+const { locale } = useI18n()
 
 const form = reactive({
   fullName: '',
@@ -118,6 +119,27 @@ const validationErrors = reactive({
   shippingAddress: ''
 })
 
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const tCreateAccount = computed(() => isZh.value ? '注册账户' : 'Create account')
+const tAlreadyHaveAccount = computed(() => isZh.value ? '已经有账户？' : 'Already have an account? ')
+const tSignIn = computed(() => isZh.value ? '去登录' : 'Sign in')
+const tFullName = computed(() => isZh.value ? '姓名' : 'Full name')
+const tEmail = computed(() => isZh.value ? '邮箱' : 'Email')
+const tPassword = computed(() => isZh.value ? '密码' : 'Password')
+const tConfirmPassword = computed(() => isZh.value ? '确认密码' : 'Confirm password')
+const tShippingAddress = computed(() => isZh.value ? '收货地址' : 'Shipping address')
+const tCreatingAccount = computed(() => isZh.value ? '注册中...' : 'Creating account...')
+const tRegisterSuccess = computed(() => isZh.value ? '注册成功，正在跳转到登录页...' : 'Registration successful. Redirecting to login...')
+const tRegisterFailed = computed(() => isZh.value ? '注册失败，请重试。' : 'Registration failed. Please try again.')
+const tFullNameRequired = computed(() => isZh.value ? '请输入姓名。' : 'Full name is required.')
+const tEmailRequired = computed(() => isZh.value ? '请输入邮箱。' : 'Email is required.')
+const tEmailInvalid = computed(() => isZh.value ? '请输入有效的邮箱地址。' : 'Please enter a valid email address.')
+const tPasswordRequired = computed(() => isZh.value ? '请输入密码。' : 'Password is required.')
+const tPasswordLength = computed(() => isZh.value ? '密码长度至少为 6 位。' : 'Password must be at least 6 characters.')
+const tConfirmRequired = computed(() => isZh.value ? '请再次输入密码。' : 'Please confirm your password.')
+const tPasswordsNotMatch = computed(() => isZh.value ? '两次输入的密码不一致。' : 'Passwords do not match.')
+const tAddressRequired = computed(() => isZh.value ? '请输入收货地址。' : 'Shipping address is required.')
+
 const clearValidationErrors = () => {
   Object.keys(validationErrors).forEach((key) => {
     validationErrors[key] = ''
@@ -127,26 +149,26 @@ const clearValidationErrors = () => {
 const validateForm = () => {
   clearValidationErrors()
 
-  if (!form.fullName) validationErrors.fullName = 'Full name is required.'
+  if (!form.fullName) validationErrors.fullName = tFullNameRequired.value
   if (!form.email) {
-    validationErrors.email = 'Email is required.'
+    validationErrors.email = tEmailRequired.value
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    validationErrors.email = 'Please enter a valid email address.'
+    validationErrors.email = tEmailInvalid.value
   }
 
   if (!form.password) {
-    validationErrors.password = 'Password is required.'
+    validationErrors.password = tPasswordRequired.value
   } else if (form.password.length < 6) {
-    validationErrors.password = 'Password must be at least 6 characters.'
+    validationErrors.password = tPasswordLength.value
   }
 
   if (!form.confirmPassword) {
-    validationErrors.confirmPassword = 'Please confirm your password.'
+    validationErrors.confirmPassword = tConfirmRequired.value
   } else if (form.password !== form.confirmPassword) {
-    validationErrors.confirmPassword = 'Passwords do not match.'
+    validationErrors.confirmPassword = tPasswordsNotMatch.value
   }
 
-  if (!form.shippingAddress) validationErrors.shippingAddress = 'Shipping address is required.'
+  if (!form.shippingAddress) validationErrors.shippingAddress = tAddressRequired.value
 
   return Object.values(validationErrors).every((value) => !value)
 }
@@ -166,29 +188,16 @@ const handleRegister = async () => {
       shipping_address: form.shippingAddress
     })
 
-    successMessage.value = result?.message || 'Registration successful. Redirecting to login...'
+    successMessage.value = result?.message || tRegisterSuccess.value
 
     setTimeout(() => {
       router.push('/login')
     }, 1200)
   } catch (error) {
     console.error('Registration failed:', error)
-    errorMessage.value = error.message || 'Registration failed. Please try again.'
+    errorMessage.value = error.message || tRegisterFailed.value
   } finally {
     isLoading.value = false
   }
 }
-
-onMounted(async () => {
-  try {
-    const session = await authAPI.getSession()
-    isLoggedIn.value = !!session?.profile
-    if (session?.profile) {
-      router.replace('/account')
-    }
-  } catch (error) {
-    console.error('Session check failed:', error)
-    isLoggedIn.value = authAPI.isLocallyLoggedIn()
-  }
-})
 </script>

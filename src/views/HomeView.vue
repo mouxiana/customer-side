@@ -44,11 +44,11 @@
 
         <div v-if="productsLoading" class="text-center py-12">
           <i class="fas fa-spinner fa-spin text-2xl text-primary"></i>
-          <p class="mt-2 text-gray-600">Loading products...</p>
+          <p class="mt-2 text-gray-600">{{ labels.loading }}</p>
         </div>
 
         <div v-else-if="products.length === 0" class="text-center py-12 text-gray-500">
-          No products available.
+          {{ labels.noProducts }}
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -70,16 +70,16 @@
 
             <div class="p-4">
               <h3 class="font-semibold text-gray-900 mb-2 truncate">{{ product.name }}</h3>
-              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description || 'No description available.' }}</p>
+              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description || labels.noDescription }}</p>
               <div class="flex items-center justify-between">
                 <span class="text-xl font-bold text-primary">{{ formatPrice(product.price) }}</span>
-                <span class="text-sm text-gray-500">ID: {{ getProductId(product) }}</span>
+                <span class="text-sm text-gray-500">{{ labels.productId }}: {{ getProductId(product) }}</span>
               </div>
               <button
                 class="w-full mt-4 bg-primary hover:bg-orange-600 text-white py-2 rounded-button text-sm"
                 @click.stop="addToCart(product)"
               >
-                Add to Cart
+                {{ labels.addToCart }}
               </button>
             </div>
           </article>
@@ -93,7 +93,7 @@
           >
             <i class="fas fa-chevron-left"></i>
           </button>
-          <span class="text-gray-700">Page {{ currentPage }} of {{ totalPages }}</span>
+          <span class="text-gray-700">{{ labels.page(currentPage, totalPages) }}</span>
           <button
             @click="goToPage(currentPage + 1)"
             :disabled="currentPage >= totalPages"
@@ -108,10 +108,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { cartAPI, productsAPI } from '../api'
 
+const { locale } = useI18n()
 const router = useRouter()
 const productsLoading = ref(false)
 const products = ref([])
@@ -119,7 +121,31 @@ const currentPage = ref(1)
 const pageSize = ref(8)
 const totalProducts = ref(0)
 
-const categories = ref([
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const labels = computed(() => isZh.value ? {
+  loading: '正在加载商品...',
+  noProducts: '暂无商品。',
+  noDescription: '暂无详细介绍。',
+  addToCart: '加入购物车',
+  productId: '商品编号',
+  page: (p, t) => `第 ${p} / ${t} 页`
+} : {
+  loading: 'Loading products...',
+  noProducts: 'No products available.',
+  noDescription: 'No description available.',
+  addToCart: 'Add to Cart',
+  productId: 'Product ID',
+  page: (p, t) => `Page ${p} of ${t}`
+})
+
+const categories = computed(() => isZh.value ? [
+  { id: 1, name: '手机' },
+  { id: 2, name: '笔记本' },
+  { id: 3, name: '平板' },
+  { id: 4, name: '音频' },
+  { id: 5, name: '穿戴设备' },
+  { id: 6, name: '配件' }
+] : [
   { id: 1, name: 'Phones' },
   { id: 2, name: 'Laptops' },
   { id: 3, name: 'Tablets' },
@@ -159,13 +185,13 @@ const goToProduct = (productId) => {
 const addToCart = async (product) => {
   try {
     await cartAPI.addToCart(getProductId(product), 1)
-    alert(`Added ${product.name} to cart.`)
+    alert(isZh.value ? `已将 ${product.name} 加入购物车。` : `Added ${product.name} to cart.`)
   } catch (error) {
     if (error.status === 401) {
       router.push('/login')
       return
     }
-    alert(error.message || 'Failed to add to cart.')
+    alert(error.message || (isZh.value ? '加入购物车失败。' : 'Failed to add to cart.'))
   }
 }
 
@@ -192,6 +218,10 @@ const fetchProducts = async () => {
     productsLoading.value = false
   }
 }
+
+watch(locale, () => {
+  fetchProducts()
+})
 
 onMounted(fetchProducts)
 </script>

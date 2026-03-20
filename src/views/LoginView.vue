@@ -1,11 +1,11 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md bg-white shadow-lg rounded-2xl p-8">
-      <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">Sign in</h1>
+      <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">{{ tSignIn }}</h1>
       <p class="text-center text-sm text-gray-600 mb-8" v-if="!isLoggedIn">
-        No account yet?
+        {{ tNoAccount }}
         <router-link to="/register" class="text-primary hover:text-orange-500 font-medium">
-          Create one
+          {{ tCreateOne }}
         </router-link>
       </p>
 
@@ -15,7 +15,7 @@
 
       <form class="space-y-5" @submit.prevent="handleLogin">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">{{ tEmail }}</label>
           <input
             id="email"
             v-model.trim="form.email"
@@ -28,7 +28,7 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">{{ tPassword }}</label>
           <input
             id="password"
             v-model="form.password"
@@ -45,8 +45,8 @@
           :disabled="loading"
           class="w-full bg-primary hover:bg-orange-600 text-white py-3 rounded-lg font-medium disabled:opacity-60"
         >
-          <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Signing in...</span>
-          <span v-else>Sign in</span>
+          <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>{{ tSigningIn }}</span>
+          <span v-else>{{ tSignIn }}</span>
         </button>
       </form>
     </div>
@@ -54,11 +54,13 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authAPI } from '../api'
 
 const router = useRouter()
+const { locale } = useI18n()
 const isLoggedIn = ref(authAPI.isLocallyLoggedIn())
 
 const form = reactive({
@@ -74,18 +76,30 @@ const errors = reactive({
 const errorMessage = ref('')
 const loading = ref(false)
 
+const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
+const tSignIn = computed(() => isZh.value ? '登录' : 'Sign in')
+const tNoAccount = computed(() => isZh.value ? '还没有账户？' : 'No account yet? ')
+const tCreateOne = computed(() => isZh.value ? '去注册' : 'Create one')
+const tEmail = computed(() => isZh.value ? '邮箱' : 'Email')
+const tPassword = computed(() => isZh.value ? '密码' : 'Password')
+const tSigningIn = computed(() => isZh.value ? '登录中...' : 'Signing in...')
+const tEmailRequired = computed(() => isZh.value ? '请输入邮箱。' : 'Email is required.')
+const tEmailInvalid = computed(() => isZh.value ? '请输入有效的邮箱地址。' : 'Please enter a valid email address.')
+const tPasswordRequired = computed(() => isZh.value ? '请输入密码。' : 'Password is required.')
+const tLoginFailed = computed(() => isZh.value ? '登录失败，请重试。' : 'Login failed. Please try again.')
+
 const validateForm = () => {
   errors.email = ''
   errors.password = ''
 
   if (!form.email) {
-    errors.email = 'Email is required.'
+    errors.email = tEmailRequired.value
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = 'Please enter a valid email address.'
+    errors.email = tEmailInvalid.value
   }
 
   if (!form.password) {
-    errors.password = 'Password is required.'
+    errors.password = tPasswordRequired.value
   }
 
   return !errors.email && !errors.password
@@ -105,14 +119,15 @@ const handleLogin = async () => {
 
     if (result?.profile) {
       isLoggedIn.value = true
+      window.dispatchEvent(new Event('auth-changed'))
       router.replace('/account')
       return
     }
 
-    errorMessage.value = 'Login failed. Please try again.'
+    errorMessage.value = tLoginFailed.value
   } catch (error) {
     console.error('Login failed:', error)
-    errorMessage.value = error.message || 'Login failed. Please try again.'
+    errorMessage.value = error.message || tLoginFailed.value
   } finally {
     loading.value = false
   }
@@ -123,6 +138,7 @@ onMounted(async () => {
     const session = await authAPI.getSession()
     isLoggedIn.value = !!session?.profile
     if (session?.profile) {
+      window.dispatchEvent(new Event('auth-changed'))
       router.replace('/account')
     }
   } catch (error) {

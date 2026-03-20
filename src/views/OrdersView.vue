@@ -2,364 +2,270 @@
   <div class="container mx-auto px-4 py-8">
     <div class="py-4">
       <nav class="flex text-sm text-gray-600">
-        <router-link to="/" class="hover:text-primary">Home</router-link>
+        <router-link to="/" class="hover:text-primary">{{ labels.home }}</router-link>
         <span class="mx-2">/</span>
-        <span class="text-gray-900">{{ pageTitle }}</span>
+        <span class="text-gray-900">{{ labels.title }}</span>
       </nav>
     </div>
 
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">{{ pageTitle }}</h1>
-      <p class="text-gray-600 mt-2">{{ pageSubtitle }}</p>
+      <h1 class="text-3xl font-bold text-gray-900">{{ labels.title }}</h1>
+      <p class="text-gray-600 mt-2">{{ labels.subtitle }}</p>
     </div>
 
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
-      <label class="text-gray-700 font-medium">{{ filterLabel }}</label>
-      <select
-        v-model="selectedStatus"
-        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary bg-white"
-        @change="handleStatusChange"
-      >
-        <option value="">{{ allOrdersLabel }}</option>
-        <option v-for="status in filterableStatuses" :key="status" :value="status">
-          {{ getStatusLabel(status) }}
-        </option>
-      </select>
+    <div v-if="isLoading" class="text-center py-12">
+      <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+      <p class="text-gray-600">{{ labels.loading }}</p>
     </div>
 
-    <div v-if="loading" class="text-center py-16">
-      <i class="fas fa-spinner fa-spin text-2xl text-primary"></i>
-      <p class="mt-3 text-gray-500">{{ loadingLabel }}</p>
+    <div v-else-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+      {{ errorMessage }}
     </div>
 
-    <div
-      v-else-if="pagedOrders.length === 0"
-      class="bg-white rounded-2xl shadow-lg p-10 text-center"
-    >
-      <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
-      <p class="text-lg text-gray-500">{{ emptyOrdersLabel }}</p>
-    </div>
+    <div v-else>
+      <div class="mb-6 flex items-center gap-4 flex-wrap">
+        <span class="text-gray-700">{{ labels.filter }}</span>
+        <select v-model="filterStatus" class="border border-gray-300 rounded-lg px-4 py-2">
+          <option value="">{{ labels.all }}</option>
+          <option value="created">{{ labels.status.created }}</option>
+          <option value="processing">{{ labels.status.processing }}</option>
+          <option value="shipped">{{ labels.status.shipped }}</option>
+          <option value="delivered">{{ labels.status.delivered }}</option>
+          <option value="completed">{{ labels.status.completed }}</option>
+          <option value="hold">{{ labels.status.hold }}</option>
+          <option value="cancelled">{{ labels.status.cancelled }}</option>
+        </select>
+      </div>
 
-    <div v-else class="space-y-5">
-      <div
-        v-for="order in pagedOrders"
-        :key="order.order_id"
-        class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-      >
-        <div class="p-6">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-            <div>
-              <div class="text-sm text-gray-500">{{ orderLabel }}</div>
-              <div class="text-2xl font-bold text-gray-900">#{{ order.order_id }}</div>
-            </div>
-
-            <div>
-              <div class="text-sm text-gray-500">{{ purchaseDateLabel }}</div>
-              <div class="font-medium text-gray-900">{{ formatDate(order.purchase_date) }}</div>
-            </div>
-
-            <div>
-              <div class="text-sm text-gray-500">{{ lastUpdatedLabel }}</div>
-              <div class="font-medium text-gray-900">{{ formatDateTime(order.updated_at || order.purchase_date) }}</div>
-            </div>
-
-            <div>
-              <div class="text-sm text-gray-500">{{ totalLabel }}</div>
-              <div class="text-2xl font-bold text-primary">{{ formatPrice(order.total_amount) }}</div>
-            </div>
-
-            <div class="flex md:justify-end">
-              <span
-                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold"
-                :class="getStatusBadgeClass(order.status)"
-              >
-                {{ getStatusLabel(order.status) }}
-              </span>
-            </div>
-          </div>
-
-          <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-            <button
-              type="button"
-              class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-800 hover:bg-gray-50"
-              @click="toggleOrderDetail(order)"
-            >
-              <i class="fas fa-clipboard-list mr-2"></i>
-              {{ expandedOrderId === order.order_id ? hideDetailsLabel : viewDetailsLabel }}
-            </button>
-
-            <button
-              type="button"
-              class="px-5 py-2.5 rounded-lg text-white"
-              :class="isOrderCancellable(order.status) ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-300 cursor-not-allowed'"
-              :disabled="!isOrderCancellable(order.status) || cancellingOrderId === order.order_id"
-              @click="cancelOrder(order)"
-            >
-              <i v-if="cancellingOrderId === order.order_id" class="fas fa-spinner fa-spin mr-2"></i>
-              {{ cancelOrderLabel }}
-            </button>
-          </div>
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div v-if="orders.length === 0" class="text-center py-12 text-gray-500">
+          <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+          <p class="text-lg">{{ labels.noOrders }}</p>
+          <router-link to="/products" class="inline-block mt-6 bg-primary text-white px-6 py-3 rounded-button hover:bg-orange-600">
+            {{ labels.startShopping }}
+          </router-link>
         </div>
 
-        <div v-if="expandedOrderId === order.order_id" class="border-t border-gray-100 bg-gray-50 p-6">
-          <div v-if="detailLoading" class="text-center py-8">
-            <i class="fas fa-spinner fa-spin text-xl text-primary"></i>
-            <p class="mt-3 text-gray-500">{{ loadingDetailsLabel }}</p>
-          </div>
-
-          <div v-else-if="expandedOrderDetail" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div class="bg-white rounded-xl p-4 border border-gray-100">
-                <div class="text-sm text-gray-500">{{ orderLabel }}</div>
-                <div class="text-xl font-bold text-gray-900">#{{ expandedOrderDetail.order_id }}</div>
+        <div v-else class="space-y-4">
+          <div v-for="order in paginatedOrders" :key="order.order_id" class="border border-gray-200 rounded-lg p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div class="text-sm text-gray-500">{{ labels.order }}</div>
+                <div class="font-semibold text-gray-900">#{{ order.order_id }}</div>
               </div>
 
-              <div class="bg-white rounded-xl p-4 border border-gray-100">
-                <div class="text-sm text-gray-500">{{ purchaseDateLabel }}</div>
-                <div class="font-semibold text-gray-900">{{ formatDateTime(expandedOrderDetail.purchase_date) }}</div>
+              <div>
+                <div class="text-sm text-gray-500">{{ labels.purchaseDate }}</div>
+                <div class="text-gray-900">{{ formatDateTime(order.purchase_date) }}</div>
               </div>
 
-              <div class="bg-white rounded-xl p-4 border border-gray-100">
-                <div class="text-sm text-gray-500">{{ statusLabel }}</div>
-                <div class="font-semibold text-gray-900">{{ getStatusLabel(expandedOrderDetail.status) }}</div>
+              <div>
+                <div class="text-sm text-gray-500">{{ labels.lastUpdated }}</div>
+                <div class="text-gray-900">{{ formatDateTime(order.updated_at || order.purchase_date) }}</div>
               </div>
 
-              <div class="bg-white rounded-xl p-4 border border-gray-100">
-                <div class="text-sm text-gray-500">{{ totalLabel }}</div>
-                <div class="font-semibold text-primary text-xl">{{ formatPrice(expandedOrderDetail.total_amount) }}</div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 border border-gray-100">
-              <h3 class="text-lg font-bold text-gray-900 mb-3">{{ shippingAddressLabel }}</h3>
-              <p class="text-gray-700">{{ expandedOrderDetail.shipping_address || noAddressLabel }}</p>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 border border-gray-100">
-              <h3 class="text-lg font-bold text-gray-900 mb-4">{{ statusHistoryLabel }}</h3>
-
-              <div v-if="normalizedStatusHistory.length === 0" class="text-gray-500">
-                {{ noHistoryLabel }}
+              <div>
+                <div class="text-sm text-gray-500">{{ labels.total }}</div>
+                <div class="font-bold text-primary">{{ formatPrice(order.total_amount) }}</div>
               </div>
 
-              <div v-else class="space-y-3">
-                <div
-                  v-for="(entry, index) in normalizedStatusHistory"
-                  :key="`${entry.status}-${entry.timestamp || index}`"
-                  class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100"
-                >
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold"
-                      :class="getStatusBadgeClass(entry.status)"
-                    >
-                      {{ getStatusLabel(entry.status) }}
-                    </span>
-                    <span class="text-sm text-gray-500">{{ entry.note }}</span>
-                  </div>
-                  <div class="text-sm font-medium text-gray-700">
-                    {{ formatDateTime(entry.timestamp) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 border border-gray-100">
-              <h3 class="text-lg font-bold text-gray-900 mb-4">{{ orderedItemsLabel }}</h3>
-
-              <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <span :class="getStatusClass(order.status)" class="inline-block px-3 py-1 rounded-full text-sm">
+                  {{ getStatusText(order.status) }}
+                </span>
                 <button
-                  v-for="item in expandedOrderDetail.items || []"
-                  :key="`${expandedOrderDetail.order_id}-${item.product_id}`"
                   type="button"
-                  class="w-full text-left border border-gray-200 rounded-xl p-4 bg-white hover:bg-orange-50 transition"
-                  @click="goToProduct(item.product_id)"
+                  class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm"
+                  @click="toggleOrderDetail(order)"
                 >
-                  <div class="flex flex-col md:flex-row md:items-center gap-4">
-                    <div class="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-                      <img
-                        v-if="resolveThumbnail(item)"
-                        :src="resolveThumbnail(item)"
-                        :alt="item.name"
-                        class="w-full h-full object-cover"
-                      >
-                      <i v-else class="fas fa-image text-gray-400"></i>
-                    </div>
-
-                    <div class="flex-1 min-w-0">
-                      <div class="font-bold text-gray-900 text-lg truncate">{{ item.name }}</div>
-                      <div class="text-sm text-gray-500 mt-1">{{ productIdLabel }}: {{ item.product_id }}</div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-4 md:gap-8 text-sm min-w-[280px]">
-                      <div>
-                        <div class="text-gray-500">{{ quantityLabel }}</div>
-                        <div class="font-semibold text-gray-900">{{ item.quantity }}</div>
-                      </div>
-                      <div>
-                        <div class="text-gray-500">{{ unitPriceLabel }}</div>
-                        <div class="font-semibold text-gray-900">{{ formatPrice(item.unit_price) }}</div>
-                      </div>
-                      <div>
-                        <div class="text-gray-500">{{ subtotalLabel }}</div>
-                        <div class="font-semibold text-primary">{{ formatPrice(item.subtotal) }}</div>
-                      </div>
-                    </div>
-                  </div>
+                  {{ expandedOrderId === order.order_id ? labels.hideDetails : labels.viewDetails }}
                 </button>
               </div>
             </div>
-          </div>
 
-          <div v-else class="text-center py-8 text-gray-500">
-            {{ loadDetailFailedLabel }}
+            <div v-if="expandedOrderId === order.order_id" class="mt-6 border-t pt-6">
+              <div v-if="detailLoading" class="text-center py-6 text-gray-500">
+                {{ labels.loadingDetails }}
+              </div>
+
+              <div v-else-if="expandedOrderDetail" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="text-sm text-gray-500">{{ labels.statusLabel }}</div>
+                    <div class="font-semibold text-gray-900">{{ getStatusText(expandedOrderDetail.status) }}</div>
+                  </div>
+                  <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="text-sm text-gray-500">{{ labels.purchaseDate }}</div>
+                    <div class="font-semibold text-gray-900">{{ formatDateTime(expandedOrderDetail.purchase_date) }}</div>
+                  </div>
+                  <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="text-sm text-gray-500">{{ labels.lastUpdated }}</div>
+                    <div class="font-semibold text-gray-900">{{ formatDateTime(expandedOrderDetail.updated_at || expandedOrderDetail.purchase_date) }}</div>
+                  </div>
+                  <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="text-sm text-gray-500">{{ labels.total }}</div>
+                    <div class="font-semibold text-primary">{{ formatPrice(expandedOrderDetail.total_amount) }}</div>
+                  </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-lg">
+                  <div class="text-sm text-gray-500 mb-1">{{ labels.shippingAddress }}</div>
+                  <div class="text-gray-900">{{ expandedOrderDetail.shipping_address || labels.noAddress }}</div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ labels.statusHistory }}</h3>
+                    <button
+                      v-if="isOrderCancellable(expandedOrderDetail.status)"
+                      type="button"
+                      class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm"
+                      @click="cancelOrder(expandedOrderDetail.order_id)"
+                    >
+                      {{ labels.cancelOrder }}
+                    </button>
+                  </div>
+
+                  <div v-if="normalizedStatusHistory.length === 0" class="text-sm text-gray-500">
+                    {{ labels.noHistory }}
+                  </div>
+
+                  <div v-else class="space-y-3">
+                    <div
+                      v-for="(entry, index) in normalizedStatusHistory"
+                      :key="`${entry.status}-${entry.timestamp}-${index}`"
+                      class="flex flex-col md:flex-row md:items-center justify-between gap-2 p-3 rounded-lg border border-gray-200"
+                    >
+                      <div class="flex items-center gap-3">
+                        <span :class="getStatusClass(entry.status)" class="inline-block px-3 py-1 rounded-full text-sm">
+                          {{ getStatusText(entry.status) }}
+                        </span>
+                        <span class="text-sm text-gray-500">{{ entry.note }}</span>
+                      </div>
+                      <div class="text-sm text-gray-700">{{ formatDateTime(entry.timestamp) }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ labels.orderItems }}</h3>
+                  <div class="space-y-3">
+                    <button
+                      v-for="item in expandedOrderDetail.items || []"
+                      :key="`${expandedOrderDetail.order_id}-${item.product_id}`"
+                      type="button"
+                      class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                      @click="openProductFromOrder(item)"
+                    >
+                      <div class="flex gap-4">
+                        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                          <img
+                            v-if="getOrderItemImage(item)"
+                            :src="getOrderItemImage(item)"
+                            :alt="item.name"
+                            class="w-full h-full object-cover"
+                          >
+                          <i v-else class="fas fa-image text-gray-400"></i>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                          <div class="font-semibold text-gray-900 truncate">{{ item.name }}</div>
+                          <div class="text-sm text-gray-500">{{ labels.productId }}: {{ item.product_id }}</div>
+                          <div class="text-sm text-gray-500">{{ labels.quantity }}: {{ item.quantity }}</div>
+                        </div>
+
+                        <div class="text-right">
+                          <div class="text-sm text-gray-500">{{ labels.unitPrice }}</div>
+                          <div class="font-medium text-gray-900">{{ formatPrice(item.unit_price) }}</div>
+                          <div class="text-sm text-gray-500 mt-2">{{ labels.subtotal }}</div>
+                          <div class="font-semibold text-primary">{{ formatPrice(item.subtotal) }}</div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="text-sm text-gray-500">
+                {{ labels.detailUnavailable }}
+              </div>
+            </div>
           </div>
         </div>
+
+        <div v-if="totalPages > 1" class="mt-8 flex justify-center items-center gap-3">
+          <button
+            @click="prevPage"
+            :disabled="currentPage === 1"
+            class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            <i class="fas fa-chevron-left mr-1"></i>{{ labels.previous }}
+          </button>
+          <span>{{ labels.page(currentPage, totalPages) }}</span>
+          <button
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            {{ labels.next }} <i class="fas fa-chevron-right ml-1"></i>
+          </button>
+        </div>
       </div>
-    </div>
-
-    <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-4">
-      <button
-        type="button"
-        class="px-4 py-2 rounded-lg border border-gray-300 bg-white disabled:opacity-50"
-        :disabled="currentPage === 1"
-        @click="currentPage -= 1"
-      >
-        {{ previousLabel }}
-      </button>
-
-      <span class="text-gray-700 font-medium">{{ pageLabel }} {{ currentPage }} / {{ totalPages }}</span>
-
-      <button
-        type="button"
-        class="px-4 py-2 rounded-lg border border-gray-300 bg-white disabled:opacity-50"
-        :disabled="currentPage === totalPages"
-        @click="currentPage += 1"
-      >
-        {{ nextLabel }}
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { ordersAPI, productsAPI } from '../api'
 
-const router = useRouter()
 const { locale } = useI18n()
-
-const loading = ref(false)
-const detailLoading = ref(false)
+const router = useRouter()
 const orders = ref([])
-const selectedStatus = ref('')
+const filterStatus = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 6
+const isLoading = ref(false)
+const detailLoading = ref(false)
+const errorMessage = ref('')
 const expandedOrderId = ref(null)
 const expandedOrderDetail = ref(null)
-const cancellingOrderId = ref(null)
-const currentPage = ref(1)
-const pageSize = 5
-
-const filterableStatuses = ['created', 'processing', 'shipped', 'delivered', 'completed', 'hold', 'cancelled']
 
 const isZh = computed(() => String(locale.value || '').toLowerCase().startsWith('zh'))
-
-const pageTitle = computed(() => isZh.value ? '我的订单' : 'My Orders')
-const pageSubtitle = computed(() => isZh.value ? '查看你的订单记录' : 'View your order history')
-const filterLabel = computed(() => isZh.value ? '按状态筛选：' : 'Filter by status:')
-const allOrdersLabel = computed(() => isZh.value ? '全部订单' : 'All Orders')
-const loadingLabel = computed(() => isZh.value ? '正在加载订单...' : 'Loading orders...')
-const emptyOrdersLabel = computed(() => isZh.value ? '暂无订单' : 'No orders yet')
-const orderLabel = computed(() => isZh.value ? '订单' : 'Order')
-const purchaseDateLabel = computed(() => isZh.value ? '下单时间' : 'Purchase Date')
-const lastUpdatedLabel = computed(() => isZh.value ? '最后更新' : 'Last Updated')
-const totalLabel = computed(() => isZh.value ? '总计' : 'Total')
-const statusLabel = computed(() => isZh.value ? '状态' : 'Status')
-const viewDetailsLabel = computed(() => isZh.value ? '查看详情' : 'View Details')
-const hideDetailsLabel = computed(() => isZh.value ? '收起详情' : 'Hide Details')
-const cancelOrderLabel = computed(() => isZh.value ? '取消订单' : 'Cancel Order')
-const loadingDetailsLabel = computed(() => isZh.value ? '正在加载订单详情...' : 'Loading order details...')
-const shippingAddressLabel = computed(() => isZh.value ? '收货地址' : 'Shipping Address')
-const orderedItemsLabel = computed(() => isZh.value ? '订单商品' : 'Ordered Items')
-const statusHistoryLabel = computed(() => isZh.value ? '状态历史记录' : 'Status History')
-const noHistoryLabel = computed(() => isZh.value ? '暂无状态历史记录' : 'No status history available')
-const noAddressLabel = computed(() => isZh.value ? '暂无地址信息' : 'No address available')
-const productIdLabel = computed(() => isZh.value ? '商品编号' : 'Product ID')
-const quantityLabel = computed(() => isZh.value ? '数量' : 'Quantity')
-const unitPriceLabel = computed(() => isZh.value ? '单价' : 'Unit Price')
-const subtotalLabel = computed(() => isZh.value ? '小计' : 'Subtotal')
-const loadDetailFailedLabel = computed(() => isZh.value ? '订单详情加载失败' : 'Failed to load order detail')
-const previousLabel = computed(() => isZh.value ? '上一页' : 'Previous')
-const nextLabel = computed(() => isZh.value ? '下一页' : 'Next')
-const pageLabel = computed(() => isZh.value ? '第' : 'Page')
-
-const totalPages = computed(() => {
-  const pages = Math.ceil(orders.value.length / pageSize)
-  return pages > 0 ? pages : 1
-})
-
-const pagedOrders = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return orders.value.slice(start, start + pageSize)
-})
-
-const normalizedStatusHistory = computed(() => {
-  if (!expandedOrderDetail.value) return []
-
-  const detail = expandedOrderDetail.value
-  const raw = Array.isArray(detail.status_history) ? detail.status_history : []
-
-  if (raw.length > 0) {
-    return raw.map((item) => ({
-      status: normalizeStatus(item?.status),
-      timestamp: item?.timestamp || item?.date || item?.updated_at || '',
-      note: historyNoteByStatus(normalizeStatus(item?.status))
-    }))
-  }
-
-  const fallback = []
-  if (detail.purchase_date) {
-    fallback.push({
-      status: 'created',
-      timestamp: detail.purchase_date,
-      note: historyNoteByStatus('created')
-    })
-  }
-
-  if (detail.updated_at && normalizeStatus(detail.status) !== 'created') {
-    fallback.push({
-      status: normalizeStatus(detail.status),
-      timestamp: detail.updated_at,
-      note: historyNoteByStatus(normalizeStatus(detail.status))
-    })
-  }
-
-  return fallback
-})
-
-watch(selectedStatus, () => {
-  currentPage.value = 1
-})
-
-function normalizeStatus(status) {
-  const value = String(status || '').trim().toLowerCase()
-  if (value === 'on hold') return 'hold'
-  return value
-}
-
-function getStatusLabel(status) {
-  const value = normalizeStatus(status)
-  const zhMap = {
-    created: '已创建',
-    processing: '处理中',
-    shipped: '已发货',
-    delivered: '已送达',
-    completed: '已完成',
-    hold: '已挂起',
-    cancelled: '已取消'
-  }
-  const enMap = {
+const labels = computed(() => isZh.value ? {
+  home: '首页',
+  title: '我的订单',
+  subtitle: '查看你的订单记录',
+  loading: '正在加载订单...',
+  filter: '筛选状态',
+  all: '全部订单',
+  noOrders: '暂无订单',
+  startShopping: '开始购物',
+  order: '订单',
+  purchaseDate: '下单时间',
+  lastUpdated: '最后更新',
+  total: '总计',
+  viewDetails: '查看详情',
+  hideDetails: '收起详情',
+  loadingDetails: '正在加载订单详情...',
+  statusLabel: '订单状态',
+  shippingAddress: '收货地址',
+  noAddress: '暂无地址信息',
+  statusHistory: '状态历史记录',
+  noHistory: '暂无状态历史记录',
+  orderItems: '订单商品',
+  cancelOrder: '取消订单',
+  quantity: '数量',
+  unitPrice: '单价',
+  subtotal: '小计',
+  productId: '商品编号',
+  detailUnavailable: '订单详情暂时不可用。',
+  previous: '上一页',
+  next: '下一页',
+  page: (p, t) => `第 ${p} / ${t} 页`,
+  status: {
     created: 'Created',
     processing: 'Processing',
     shipped: 'Shipped',
@@ -368,80 +274,111 @@ function getStatusLabel(status) {
     hold: 'On Hold',
     cancelled: 'Cancelled'
   }
+} : {
+  home: 'Home',
+  title: 'My Orders',
+  subtitle: 'View your order history',
+  loading: 'Loading orders...',
+  filter: 'Filter by status',
+  all: 'All Orders',
+  noOrders: 'No orders yet',
+  startShopping: 'Start Shopping',
+  order: 'Order',
+  purchaseDate: 'Purchase Date',
+  lastUpdated: 'Last Updated',
+  total: 'Total',
+  viewDetails: 'View Details',
+  hideDetails: 'Hide Details',
+  loadingDetails: 'Loading order details...',
+  statusLabel: 'Status',
+  shippingAddress: 'Shipping Address',
+  noAddress: 'No address available',
+  statusHistory: 'Status History',
+  noHistory: 'No status history available',
+  orderItems: 'Order Items',
+  cancelOrder: 'Cancel Order',
+  quantity: 'Quantity',
+  unitPrice: 'Unit Price',
+  subtotal: 'Subtotal',
+  productId: 'Product ID',
+  detailUnavailable: 'Order detail is temporarily unavailable.',
+  previous: 'Previous',
+  next: 'Next',
+  page: (p, t) => `Page ${p} of ${t}`,
+  status: {
+    created: 'Created',
+    processing: 'Processing',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    completed: 'Completed',
+    hold: 'On Hold',
+    cancelled: 'Cancelled'
+  }
+})
 
-  return (isZh.value ? zhMap[value] : enMap[value]) || status || '-'
-}
+const totalPages = computed(() => Math.max(1, Math.ceil(orders.value.length / itemsPerPage)))
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return orders.value.slice(start, start + itemsPerPage)
+})
 
-function historyNoteByStatus(status) {
-  const value = normalizeStatus(status)
-  if (isZh.value) {
-    const map = {
-      created: '订单已创建',
-      processing: '订单进入处理流程',
-      shipped: '订单已发货',
-      delivered: '订单已送达',
-      completed: '订单已完成',
-      hold: '订单已挂起',
-      cancelled: '订单已取消'
-    }
-    return map[value] || '状态已更新'
+const normalizedStatusHistory = computed(() => {
+  const detail = expandedOrderDetail.value
+  if (!detail) return []
+
+  const raw = Array.isArray(detail.status_history) ? detail.status_history : []
+  if (raw.length > 0) {
+    return raw.map((item) => ({
+      status: normalizeStatus(item?.status),
+      timestamp: item?.timestamp || item?.date || item?.updated_at || '',
+      note: getHistoryNote(normalizeStatus(item?.status))
+    }))
   }
 
-  const map = {
-    created: 'Order created',
-    processing: 'Order entered processing',
-    shipped: 'Order shipped',
-    delivered: 'Order delivered',
-    completed: 'Order completed',
-    hold: 'Order put on hold',
-    cancelled: 'Order cancelled'
+  const fallback = []
+  if (detail.purchase_date) {
+    fallback.push({
+      status: 'created',
+      timestamp: detail.purchase_date,
+      note: getHistoryNote('created')
+    })
   }
-  return map[value] || 'Status updated'
-}
-
-function getStatusBadgeClass(status) {
-  const value = normalizeStatus(status)
-  const map = {
-    created: 'bg-blue-100 text-blue-700',
-    processing: 'bg-amber-100 text-amber-700',
-    shipped: 'bg-purple-100 text-purple-700',
-    delivered: 'bg-green-100 text-green-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    hold: 'bg-yellow-100 text-yellow-700',
-    cancelled: 'bg-red-100 text-red-700'
+  if (detail.updated_at && normalizeStatus(detail.status) !== 'created') {
+    fallback.push({
+      status: normalizeStatus(detail.status),
+      timestamp: detail.updated_at,
+      note: getHistoryNote(normalizeStatus(detail.status))
+    })
   }
-  return map[value] || 'bg-gray-100 text-gray-700'
+  return fallback
+})
+
+const normalizeStatus = (status) => {
+  const value = String(status || '').trim().toLowerCase()
+  if (value === 'on hold') return 'hold'
+  return value
 }
 
-function isOrderCancellable(status) {
-  const value = normalizeStatus(status)
-  return ['created', 'processing', 'hold'].includes(value)
+const getStatusClass = (status) => {
+  const classes = {
+    created: 'bg-blue-100 text-blue-800',
+    processing: 'bg-yellow-100 text-yellow-800',
+    shipped: 'bg-purple-100 text-purple-800',
+    delivered: 'bg-green-100 text-green-800',
+    completed: 'bg-emerald-100 text-emerald-800',
+    cancelled: 'bg-red-100 text-red-800',
+    hold: 'bg-orange-100 text-orange-800'
+  }
+  return classes[normalizeStatus(status)] || 'bg-gray-100 text-gray-800'
 }
 
-function formatPrice(value) {
-  const amount = Number(value || 0)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
+const getStatusText = (status) => labels.value.status[normalizeStatus(status)] || status
+const isOrderCancellable = (status) => ['created', 'processing', 'hold'].includes(normalizeStatus(status))
+const formatPrice = (price) => `$${Number(price || 0).toFixed(2)}`
 
-function formatDate(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleDateString(isZh.value ? 'zh-CN' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
-
-function formatDateTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleString(isZh.value ? 'zh-CN' : 'en-US', {
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleString(isZh.value ? 'zh-CN' : 'en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -450,30 +387,55 @@ function formatDateTime(value) {
   })
 }
 
-function resolveThumbnail(item) {
-  return productsAPI.resolveAssetUrl(item?.thumbnail_url || '')
+const getHistoryNote = (status) => {
+  const map = isZh.value ? {
+    created: '订单已创建',
+    processing: '订单处理中',
+    shipped: '订单已发货',
+    delivered: '订单已送达',
+    completed: '订单已完成',
+    hold: '订单已挂起',
+    cancelled: '订单已取消'
+  } : {
+    created: 'Order created',
+    processing: 'Order processing',
+    shipped: 'Order shipped',
+    delivered: 'Order delivered',
+    completed: 'Order completed',
+    hold: 'Order put on hold',
+    cancelled: 'Order cancelled'
+  }
+  return map[normalizeStatus(status)] || (isZh.value ? '状态已更新' : 'Status updated')
 }
 
-async function fetchOrders() {
+const getOrderItemImage = (item) => {
+  if (item?.thumbnail_url) return productsAPI.resolveAssetUrl(item.thumbnail_url)
+  return ''
+}
+
+const fetchOrders = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  currentPage.value = 1
+
   try {
-    loading.value = true
-    const result = await ordersAPI.getOrders(selectedStatus.value)
-    orders.value = Array.isArray(result?.orders) ? result.orders : []
+    const result = await ordersAPI.getOrders(filterStatus.value || '')
+    orders.value = result?.orders || []
   } catch (error) {
     console.error('Failed to fetch orders:', error)
+    if (error.status === 401) {
+      errorMessage.value = isZh.value ? '请先登录后查看订单。' : 'Please login to view your orders.'
+      setTimeout(() => router.push('/login'), 800)
+    } else {
+      errorMessage.value = error.message || (isZh.value ? '加载订单失败。' : 'Failed to load orders.')
+    }
     orders.value = []
   } finally {
-    loading.value = false
+    isLoading.value = false
   }
 }
 
-async function handleStatusChange() {
-  expandedOrderId.value = null
-  expandedOrderDetail.value = null
-  await fetchOrders()
-}
-
-async function toggleOrderDetail(order) {
+const toggleOrderDetail = async (order) => {
   if (expandedOrderId.value === order.order_id) {
     expandedOrderId.value = null
     expandedOrderDetail.value = null
@@ -482,9 +444,9 @@ async function toggleOrderDetail(order) {
 
   expandedOrderId.value = order.order_id
   expandedOrderDetail.value = null
+  detailLoading.value = true
 
   try {
-    detailLoading.value = true
     const detail = await ordersAPI.getOrderDetail(order.order_id)
     expandedOrderDetail.value = {
       ...detail,
@@ -499,36 +461,50 @@ async function toggleOrderDetail(order) {
   }
 }
 
-async function cancelOrder(order) {
-  if (!isOrderCancellable(order.status)) return
+const openProductFromOrder = (item) => {
+  const productId = item?.product_id ?? item?.id
+  if (!productId) return
+  router.push(`/product/${productId}`)
+}
 
-  const confirmed = window.confirm(
-    isZh.value ? '确定要取消这个订单吗？' : 'Are you sure you want to cancel this order?'
-  )
+const cancelOrder = async (orderId) => {
+  const order = expandedOrderDetail.value || orders.value.find((item) => item.order_id === orderId)
+  if (!order || !isOrderCancellable(order.status)) return
+
+  const confirmed = window.confirm(isZh.value ? '确定要取消这个订单吗？' : 'Are you sure you want to cancel this order?')
   if (!confirmed) return
 
   try {
-    cancellingOrderId.value = order.order_id
-    await ordersAPI.cancelOrder(order.order_id)
+    await ordersAPI.cancelOrder(orderId)
     await fetchOrders()
 
-    if (expandedOrderId.value === order.order_id) {
-      const refreshed = orders.value.find((item) => item.order_id === order.order_id)
-      if (refreshed) {
-        await toggleOrderDetail(refreshed)
-      }
+    const refreshed = orders.value.find((item) => item.order_id === orderId)
+    if (refreshed) {
+      await toggleOrderDetail(refreshed)
     }
   } catch (error) {
-    console.error('Failed to cancel order:', error)
-    alert(error.message || 'Failed to cancel order')
-  } finally {
-    cancellingOrderId.value = null
+    alert(error.message || (isZh.value ? '取消订单失败。' : 'Failed to cancel order.'))
   }
 }
 
-function goToProduct(productId) {
-  router.push(`/products/${productId}`)
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value -= 1
 }
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value += 1
+}
+
+watch(filterStatus, fetchOrders)
+watch(locale, async () => {
+  await fetchOrders()
+  if (expandedOrderId.value) {
+    const order = orders.value.find((item) => item.order_id === expandedOrderId.value)
+    if (order) {
+      await toggleOrderDetail(order)
+    }
+  }
+})
 
 fetchOrders()
 </script>
