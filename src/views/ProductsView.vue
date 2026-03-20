@@ -96,7 +96,7 @@
 
                 <div class="p-5">
                   <h2 class="text-xl font-bold text-gray-900 mb-2 truncate">{{ product.name }}</h2>
-                  <p class="text-sm text-gray-600 mb-4 line-clamp-2">{{ product.description || labels.noDescription }}</p>
+                  <p v-if="product.description" class="text-sm text-gray-600 mb-4 line-clamp-2">{{ product.description }}</p>
 
                   <div class="flex items-center justify-between">
                     <span class="text-2xl font-bold text-primary">{{ formatPrice(product.price) }}</span>
