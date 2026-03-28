@@ -110,6 +110,20 @@
                 </button>
 
                 <button
+                  v-if="canComplete(order.status)"
+                  type="button"
+                  class="px-4 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="completingOrderId === order.order_id"
+                  @click="handleCompleteOrder(order.order_id)"
+                >
+                  <span v-if="completingOrderId === order.order_id">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    {{ labels.completing }}
+                  </span>
+                  <span v-else>{{ labels.confirmReceipt }}</span>
+                </button>
+
+                <button
                   type="button"
                   class="px-4 py-2 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   :class="canCancel(order.status) ? 'bg-primary hover:bg-orange-600' : 'bg-gray-300'"
@@ -188,8 +202,25 @@
                   </div>
                 </div>
 
-                <div class="flex justify-end" v-if="canCancel(detailById[order.order_id].status || order.status)">
+                <div
+                  v-if="canComplete(detailById[order.order_id].status || order.status) || canCancel(detailById[order.order_id].status || order.status)"
+                  class="flex justify-end gap-3"
+                >
                   <button
+                    v-if="canComplete(detailById[order.order_id].status || order.status)"
+                    type="button"
+                    class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm"
+                    :disabled="completingOrderId === order.order_id"
+                    @click="handleCompleteOrder(order.order_id)"
+                  >
+                    <span v-if="completingOrderId === order.order_id">
+                      <i class="fas fa-spinner fa-spin mr-2"></i>{{ labels.completing }}
+                    </span>
+                    <span v-else>{{ labels.confirmReceipt }}</span>
+                  </button>
+
+                  <button
+                    v-if="canCancel(detailById[order.order_id].status || order.status)"
                     type="button"
                     class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm"
                     :disabled="cancellingOrderId === order.order_id"
@@ -310,6 +341,7 @@ const errorMessage = ref('')
 const expandedOrderId = ref(null)
 const detailLoadingId = ref(null)
 const cancellingOrderId = ref(null)
+const completingOrderId = ref(null)
 const detailById = ref({})
 const detailErrorById = ref({})
 
@@ -336,6 +368,8 @@ const labels = computed(() => isZh.value ? {
   orderItems: '订单商品',
   cancelOrder: '取消订单',
   cancelling: '取消中...',
+  confirmReceipt: '确认收货',
+  completing: '确认中...',
   quantity: '数量',
   unitPrice: '单价',
   subtotal: '小计',
@@ -352,6 +386,8 @@ const labels = computed(() => isZh.value ? {
   loadFailed: '加载订单失败。',
   cancelConfirm: (id) => `确定要取消订单 #${id} 吗？`,
   cancelFailed: '取消订单失败。',
+  confirmReceiptConfirm: (id) => `确认已收到订单 #${id} 吗？确认后订单将变为“已完成”。`,
+  completeFailed: '确认收货失败。',
   statusText: {
     created: '已创建',
     processing: '处理中',
@@ -384,6 +420,8 @@ const labels = computed(() => isZh.value ? {
   orderItems: 'Order Items',
   cancelOrder: 'Cancel Order',
   cancelling: 'Cancelling...',
+  confirmReceipt: 'Confirm Receipt',
+  completing: 'Completing...',
   quantity: 'Quantity',
   unitPrice: 'Unit Price',
   subtotal: 'Subtotal',
@@ -400,6 +438,8 @@ const labels = computed(() => isZh.value ? {
   loadFailed: 'Failed to load orders.',
   cancelConfirm: (id) => `Cancel order #${id}?`,
   cancelFailed: 'Failed to cancel order.',
+  confirmReceiptConfirm: (id) => `Confirm receipt for order #${id}? This will mark the order as completed.`,
+  completeFailed: 'Failed to complete order.',
   statusText: {
     created: 'Created',
     processing: 'Processing',
@@ -429,6 +469,7 @@ const normalizeStatus = (status) => {
 
 const getStatusText = (status) => labels.value.statusText[normalizeStatus(status)] || status || ''
 const canCancel = (status) => ['created', 'processing', 'hold'].includes(normalizeStatus(status))
+const canComplete = (status) => ['delivered'].includes(normalizeStatus(status))
 
 const getStatusClass = (status) => {
   const classes = {
@@ -648,6 +689,41 @@ const handleCancelOrder = async (orderId) => {
     alert(error.message || labels.value.cancelFailed)
   } finally {
     cancellingOrderId.value = null
+  }
+}
+
+const handleCompleteOrder = async (orderId) => {
+  const target = orders.value.find((order) => order.order_id === orderId)
+  if (!target || !canComplete(target.status)) return
+
+  if (!window.confirm(labels.value.confirmReceiptConfirm(orderId))) return
+
+  completingOrderId.value = orderId
+
+  try {
+    if (typeof ordersAPI.completeOrder === 'function') {
+      await ordersAPI.completeOrder(orderId)
+    } else if (typeof ordersAPI.complete === 'function') {
+      await ordersAPI.complete(orderId)
+    } else {
+      throw new Error(isZh.value ? '前端未找到 complete order 接口方法。' : 'Complete order API method is not available in frontend.')
+    }
+
+    detailById.value = {
+      ...detailById.value,
+      [orderId]: undefined
+    }
+    await fetchOrders()
+
+    const refreshed = orders.value.find((order) => order.order_id === orderId)
+    if (refreshed && expandedOrderId.value === orderId) {
+      await toggleOrderDetail(orderId)
+    }
+  } catch (error) {
+    console.error('Failed to complete order:', error)
+    alert(error.message || labels.value.completeFailed)
+  } finally {
+    completingOrderId.value = null
   }
 }
 
